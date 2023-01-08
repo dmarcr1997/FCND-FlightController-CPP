@@ -126,6 +126,7 @@ float QuadControl::AltitudeControl(float posZCmd, float velZCmd, float posZ, flo
   Mat3x3F R = attitude.RotationMatrix_IwrtB();
   float thrust = 0;
   
+
   float zErr = posZCmd - posZ;
   float zDotCmd = kpPosZ * zErr + velZCmd;
   zDotCmd = CONSTRAIN(zDotCmd, -maxDescentRate, maxDescentRate);
@@ -134,7 +135,7 @@ float QuadControl::AltitudeControl(float posZCmd, float velZCmd, float posZ, flo
   accelZCmd += KiPosZ * integratedAltitudeError + kpVelZ * zErrDot;
   float BZ = R(2, 2);
   thrust = mass * ((float)CONST_GRAVITY - accelZCmd) / BZ;
-
+  
   return thrust;
 }
 
