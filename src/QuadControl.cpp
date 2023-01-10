@@ -59,20 +59,15 @@ VehicleCommand QuadControl::GenerateMotorCommands(float collThrustCmd, V3F momen
 
   float length = L / sqrt(2.f);
 
-  float Ft = collThrustCmd;
-  float Fp = momentCmd.x / length;
-  float Fq = momentCmd.y / length;
-  float Fr = momentCmd.z / kappa;
+  float f1 = momentCmd.x / length;
+  float f2 = momentCmd.y / length;
+  float f3 = momentCmd.z / kappa;
+  float f4 = collThrustCmd;
 
-  float F1 = (Ft + Fp + Fq - Fr) / 4;
-  float F2 = (F1 - (Fp - Fr) / 2);
-  float F4 = ((Ft - Fp) / 2) - F2;
-  float F3 = Ft - F1 - F2 - F4;
-
-  cmd.desiredThrustsN[0] = CONSTRAIN(F1, minMotorThrust, maxMotorThrust);
-  cmd.desiredThrustsN[1] = CONSTRAIN(F2, minMotorThrust, maxMotorThrust);
-  cmd.desiredThrustsN[2] = CONSTRAIN(F3, minMotorThrust, maxMotorThrust);
-  cmd.desiredThrustsN[3] = CONSTRAIN(F4, minMotorThrust, maxMotorThrust);
+  cmd.desiredThrustsN[0] = (f4 + f1 + f2 - f3) / 4.f;
+  cmd.desiredThrustsN[1] = (f4 - f1 + f2 + f3) / 4.f;
+  cmd.desiredThrustsN[2] = (f4 + f1 - f2 + f3) / 4.f;
+  cmd.desiredThrustsN[3] = (f4 - f1 - f2 - f3) / 4.f;
 
   return cmd;
 }
@@ -148,15 +143,17 @@ V3F QuadControl::LateralPositionControl(V3F posCmd, V3F velCmd, V3F pos, V3F vel
   posCmd.z = pos.z;
 
   V3F accelCmd = accelCmdFF;
-
-  velCmd = kpPosXY * (posCmd - pos);
-  velCmd.constrain(-maxSpeedXY, maxSpeedXY);
-
-  const V3F err_dot = velCmd - vel;
-  accelCmd += kpVelXY * err_dot;
-
-  accelCmd.constrain(-maxAccelXY, maxAccelXY);
-
+  V3F pos_error = posCmd - pos;
+  V3F vel_cmd = kpPosXY * pos_error + velCmd;
+  if (vel_cmd.mag() > maxSpeedXY) {
+       vel_cmd = vel_cmd.norm() * maxSpeedXY;
+  }
+  V3F vel_error = vel_cmd - vel;
+  accelCmd += kpVelXY * vel_error;
+  accelCmd.z = 0;
+  if (accelCmd.mag() > maxAccelXY) {
+       accelCmd = accelCmd.norm() * maxAccelXY;
+  }
 
   return accelCmd;
 }
